@@ -14,13 +14,13 @@ import (
 
 type Hooks struct {
 	// PreUp of the interface
-	PreUp []string
+	PreUp []string `json:"pre_up,omitempty"`
 	// PostUp of the interface
-	PostUp []string
+	PostUp []string `json:"post_up,omitempty"`
 	// PreDown of the interface
-	PreDown []string
+	PreDown []string `json:"pre_down,omitempty"`
 	// PostDown of the interface
-	PostDown []string
+	PostDown []string `json:"post_down,omitempty"`
 }
 
 type AddressConfig uint8
