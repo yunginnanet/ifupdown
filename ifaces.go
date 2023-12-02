@@ -9,6 +9,8 @@ import (
 	"git.tcp.direct/kayos/common/pool"
 )
 
+type Interfaces map[string]*NetworkInterface
+
 type poolGroup struct {
 	Buffers pool.BufferFactory
 	Strs    pool.StringFactory
@@ -20,22 +22,28 @@ type MultiParser struct {
 	Interfaces map[string]*NetworkInterface
 	Errs       []error
 	buf        []byte
+	mu         *sync.Mutex
 }
 
 func NewMultiParser() *MultiParser {
 	return &MultiParser{
-		Interfaces: make(map[string]*NetworkInterface),
+		Interfaces: make(Interfaces),
 		Errs:       make([]error, 0),
 		buf:        make([]byte, 0),
+		mu:         &sync.Mutex{},
 	}
 }
 
 func (p *MultiParser) Write(data []byte) (int, error) {
+	p.mu.Lock()
 	p.buf = append(p.buf, data...)
+	p.mu.Unlock()
 	return len(data), nil
 }
 
-func (p *MultiParser) Parse() error {
+func (p *MultiParser) Parse() (Interfaces, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	scanner := bufio.NewScanner(strings.NewReader(string(p.buf)))
 
 	index := 0

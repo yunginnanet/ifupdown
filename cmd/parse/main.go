@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	eth0 := &iface.NetworkInterface{}
+	ifaces := iface.NewMultiParser()
 	switch {
 	case len(os.Args) < 2:
 		buf := &bytes.Buffer{}
@@ -31,7 +31,7 @@ func main() {
 				break
 			}
 		}
-		n, err := eth0.Write(buf.Bytes())
+		n, err := ifaces.Write(buf.Bytes())
 		if err != nil {
 			panic(err)
 		}
@@ -43,7 +43,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		n, err := eth0.Write(dat)
+		n, err := ifaces.Write(dat)
 		if err != nil {
 			panic(err)
 		}
@@ -51,12 +51,22 @@ func main() {
 			panic("short write")
 		}
 	}
-	dat, err := json.MarshalIndent(eth0, "", "\t")
+	imap, err := ifaces.Parse()
 	if err != nil {
-		panic(err)
-	}
-	if err = eth0.Validate(); err != nil {
 		println(err.Error())
+		return
 	}
+	for _, netif := range imap {
+		if netif == nil {
+			continue
+		}
+		if err = netif.Validate(); err != nil {
+			println(netif.Name + " skip due to error: " + err.Error())
+			delete(imap, netif.Name)
+			continue
+		}
+	}
+
+	dat, err := json.MarshalIndent(imap, "", "\t")
 	_, _ = os.Stdout.Write(dat)
 }
