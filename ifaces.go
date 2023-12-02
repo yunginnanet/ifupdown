@@ -2,9 +2,9 @@ package iface
 
 import (
 	"bufio"
+	"fmt"
 	"strings"
-
-	"github.com/hashicorp/go-multierror"
+	"sync"
 
 	"git.tcp.direct/kayos/common/pool"
 )
@@ -92,11 +92,16 @@ func (p *MultiParser) Parse() error {
 	if len(buf.Bytes()) > 0 {
 		flush("unknown")
 	}
-	me := &multierror.Error{}
+	var multiErr error
 	for _, err := range p.Errs {
-		if err != nil {
-			me = multierror.Append(me, err)
+		switch {
+		case err == nil:
+			continue
+		case multiErr == nil:
+			multiErr = err
+		default:
+			multiErr = fmt.Errorf("%w, %w", multiErr, err)
 		}
 	}
-	return me.ErrorOrNil()
+	return p.Interfaces, multiErr
 }
