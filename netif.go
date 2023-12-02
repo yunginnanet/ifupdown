@@ -1,4 +1,4 @@
-package iface
+package ifupdown
 
 import (
 	"bufio"
@@ -110,9 +110,10 @@ func (iface *NetworkInterface) allocate() {
 	if iface.RWMutex == nil {
 		iface.RWMutex = &sync.RWMutex{}
 	}
-	iface.Lock()
+	iface.Lock() // gets unlocked in other methods
 	iface.dirty = true
 	iface.allocated = true
+
 }
 
 func (iface *NetworkInterface) err() error {
