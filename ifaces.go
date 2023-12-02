@@ -2,39 +2,38 @@ package ifupdown
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
 	"sync"
-
-	"git.tcp.direct/kayos/common/pool"
 )
 
 type Interfaces map[string]*NetworkInterface
 
-func (i Interfaces) buf() *pool.Buffer {
-	buf := pools.Buffers.Get()
+func (i Interfaces) buf() *bytes.Buffer {
+	buf := &bytes.Buffer{}
 	for _, iface := range i {
-		err := iface.write(func(s string) { buf.MustWrite([]byte(s)) })
+		err := iface.write(func(s string) { _, _ = buf.Write([]byte(s)) })
 		if err != nil && !errors.Is(err, io.EOF) {
 			panic(err)
 		}
-		buf.MustWrite([]byte("\n"))
+		_, _ = buf.Write([]byte("\n"))
 	}
 	return buf
 }
 
 func (i Interfaces) Read(p []byte) (int, error) {
 	buf := i.buf()
-	defer pools.Buffers.MustPut(buf)
+	defer pools.Buffers.Put(buf)
 	return buf.Read(p)
 }
 
 func (i Interfaces) String() string {
 	buf := i.buf()
-	defer pools.Buffers.MustPut(buf)
+	defer pools.Buffers.Put(buf)
 	return buf.String()
 }
 
@@ -84,13 +83,13 @@ func (p *MultiParser) Parse() (Interfaces, error) {
 	currentIfaceName := ""
 
 	buf := pools.Buffers.Get()
-	defer pools.Buffers.MustPut(buf)
+	defer pools.Buffers.Put(buf)
 
 	flush := func(name string) (*NetworkInterface, bool) {
 		if len(buf.Bytes()) == 0 {
 			return nil, false
 		}
-		defer buf.MustReset()
+		defer buf.Reset()
 		newIface := NewNetworkInterface(name)
 		if _, err := buf.WriteTo(newIface); err != nil {
 			p.Errs = append(p.Errs, err)

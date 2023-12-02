@@ -375,10 +375,10 @@ func (iface *NetworkInterface) String() string {
 		return ""
 	}
 	str := pools.Strs.Get()
-	defer pools.Strs.MustPut(str)
+	defer pools.Strs.Put(str)
 	w := func(s string) {
 		if len(s) > 0 {
-			str.MustWriteString(s)
+			str.WriteString(s)
 		}
 	}
 	if err := iface.write(w); err != nil && !errors.Is(err, io.EOF) {
