@@ -1,4 +1,4 @@
-package iface
+package ifupdown
 
 import (
 	"testing"
@@ -19,13 +19,18 @@ iface eth0 inet dhcp
 		t.Fatalf("Write failed: %v", err)
 	}
 
-	err = mp.Parse()
+	var ifaces Interfaces
+	ifaces, err = mp.Parse()
 	if err != nil {
 		t.Fatalf("Expected nil error, got: %v", err)
 	}
 
 	if len(mp.Interfaces) != 2 {
 		t.Fatalf("Expected 2 interfaces, got: %d", len(mp.Interfaces))
+	}
+
+	if len(mp.Interfaces) != len(ifaces) {
+		t.Fatalf("Expected %d interfaces, got: %d", len(mp.Interfaces), len(ifaces))
 	}
 
 	loIface, ok := mp.Interfaces["lo"]
@@ -36,6 +41,11 @@ iface eth0 inet dhcp
 	eth0Iface, ok := mp.Interfaces["eth0"]
 	if !ok || eth0Iface.Name != "eth0" {
 		t.Fatalf("Expected to find interface 'eth0', got: %+v", eth0Iface)
+	}
+	for _, iface := range ifaces {
+		if err = iface.Validate(); err != nil {
+			t.Fatalf("Expected nil error, got: %v", err)
+		}
 	}
 }
 

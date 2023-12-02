@@ -1,8 +1,11 @@
-package iface
+package ifupdown
 
 import (
 	"bufio"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 
@@ -11,12 +14,43 @@ import (
 
 type Interfaces map[string]*NetworkInterface
 
-type poolGroup struct {
-	Buffers pool.BufferFactory
-	Strs    pool.StringFactory
+func (i Interfaces) buf() *pool.Buffer {
+	buf := pools.Buffers.Get()
+	for _, iface := range i {
+		err := iface.write(func(s string) { buf.MustWrite([]byte(s)) })
+		if err != nil && !errors.Is(err, io.EOF) {
+			panic(err)
+		}
+		buf.MustWrite([]byte("\n"))
+	}
+	return buf
 }
 
-var pools = poolGroup{Buffers: pool.NewBufferFactory(), Strs: pool.NewStringFactory()}
+func (i Interfaces) Read(p []byte) (int, error) {
+	buf := i.buf()
+	defer pools.Buffers.MustPut(buf)
+	return buf.Read(p)
+}
+
+func (i Interfaces) String() string {
+	buf := i.buf()
+	defer pools.Buffers.MustPut(buf)
+	return buf.String()
+}
+
+func (i Interfaces) UnmarshalJSON(data []byte) error {
+	var ifaces map[string]*NetworkInterface
+	if err := json.Unmarshal(data, &ifaces); err != nil {
+		return err
+	}
+	for name, iface := range ifaces {
+		iface.Name = name
+		iface.allocated = true
+		i[name] = iface
+	}
+
+	return nil
+}
 
 type MultiParser struct {
 	Interfaces map[string]*NetworkInterface
