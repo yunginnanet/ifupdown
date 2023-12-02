@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 func TestAddressConfig_String(t *testing.T) {
@@ -293,10 +291,10 @@ iface eth0 inet static
 			switch {
 			case len(tt.wantErrors) < 1 && validationErrs != nil:
 				t.Errorf("Validate(): %v", validationErrs)
-				spew.Dump(iface)
+				t.Logf("%v", iface)
 			case len(tt.wantErrors) != 0 && len(iface.errs) == 0:
 				t.Errorf("interface error: %v, wanted %+v", iface.errs, tt.wantErrors)
-				t.Logf("%s", spew.Sdump(iface))
+				t.Logf("%v", iface)
 			case len(tt.wantErrors) != 0 && len(iface.errs) != 0:
 				need := len(tt.wantErrors)
 				for _, err := range iface.errs {
